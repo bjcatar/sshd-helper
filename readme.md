@@ -1,7 +1,7 @@
 # 
 
 ```shell
-export KUBECONFIG=~/.kube/zero-reactive-eks-qa2
+export KUBECONFIG=~/.kube/my_cluster_config
 ```
 
 # Create the pod by running:
