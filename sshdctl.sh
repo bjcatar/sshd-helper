@@ -86,7 +86,7 @@ function start_tunnel {
   check_port_forward
 
   # Start sshuttle
-  if ! sshuttle --dns -vr root@localhost:8080 $network; then
+  if ! sshuttle --dns -vr root@localhost:8080 $network -e "ssh -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null"; then
     echo "Failed to start sshuttle."
     exit 1
   fi
