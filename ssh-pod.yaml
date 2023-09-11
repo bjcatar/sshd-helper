@@ -1,29 +1,30 @@
 apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: ssh-key-config
-data:
-  ssh-publickey: |
-    ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAICJnJZ0+0anlGLP/5hFDb0KfHv2my/I4i0SLN6lMA5JO gh_key
-    ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQDrSJ1dQDtG1Y2gpx1A1WfMExr6pwxEAg300XZcNtffsl0ihPU7+H2AD7dujBLXfSv8/Ud2fp0UOmO2Ugfg/vmYwRpatFc5mb72o06U3/FuzMIb37gIWCfEuFosVuA7K9MMEXq7pAZXCgDb0tHB1Iuqo+MHCvmoSpGQRLRTpt8eeVFg4zSyMGGV1USJk1vuwLv82JyhXjDrkh6ZeJWWqlxLeOPeQecA5/GJ1NhtPeNALTIPZo+DB9kVI2BdqfjO8hx7iFGqDECc7L0JhE+01jHWGGDDf2B/68SfKeN5ozL7gMS7JgyATHFXRs3BmJS9WAW5kbaBH9nRCL40GO66jut/k9fft15FrCzmxnct7Y4nZTyOIifKLlx0oC8e3KKeCKI3gGrLV1yjQTkwxI3zw1HWtJlBllKVNTT8uJShjQNzSVv28i8PbYbcKn3jDo1irMIlFM+zpzNrVWs9P8tzqNfxvjpSVdewYkuzVS8t+Mne5Jx0j/eY4+7vMAqzUY70FRk= gh_key
----
-apiVersion: v1
 kind: Pod
 metadata:
   name: ssh-pod
 spec:
   containers:
   - name: sshd
-    image: rastasheep/ubuntu-sshd:18.04
+    image: ubuntu:20.04
     ports:
     - containerPort: 22
     volumeMounts:
     - name: ssh-key-volume
       mountPath: /root/.ssh
+    securityContext:
+      privileged: true
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      apt-get update &&
+      apt-get install -y openssh-server &&
+      echo "root:root" | chpasswd &&
+      service ssh start &&
+      tail -f /dev/null
   volumes:
   - name: config-volume
-    configMap:
-      name: ssh-key-config
+    secret:
+      secretName: sshdhelper-key-secret
       items:
       - key: ssh-publickey
         path: authorized_keys
@@ -32,11 +33,11 @@ spec:
   initContainers:
   - name: ssh-key-dir
     image: alpine:3.13
-    command: 
-    - "/bin/sh"
-    - "-c"
+    command:
+    - /bin/sh
+    - -c
     - |
-      cp /root/config-volume/authorized_keys /root/ssh-key-volume/ && 
+      cp /root/config-volume/authorized_keys /root/ssh-key-volume/ &&
       chmod 700 /root/ssh-key-volume/ &&
       chmod 600 /root/ssh-key-volume/authorized_keys
     volumeMounts:
